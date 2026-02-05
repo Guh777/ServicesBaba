@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Babalu Motos Services</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <nav class="navbar bg-body-tertiary">
+    <div class="container-fluid">
+      <form class="d-flex" role="search">
+        <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search"/>
+        <button class="btn btn-outline-success" type="submit">Pesquisar</button>
+      </form>
+      <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#novoServicoModal">
+        <i class="bi bi-plus-circle"> Adicionar Novo</i>
+      </button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="row row-cols-1 row-cols-md-2 g-4 justify-content-center" id="cardsContainer">
+      <!-- Cards existentes -->
+      <div class="col">
+        <div class="card">
+          <img src="./img/ducati.jpg" class="card-img-top" alt="...">
+          <div class="card-body">
+            <h5 class="card-title fs-4">Ducati Multistrada</h5>
+            <p class="card-text fs-5"><strong>Placa:</strong> ??????</p>
+            <p class="fs-6" style="color: rgb(183, 3, 0); font-weight: 600;">Em andamento</p>
+            <button type="button" class="btn btn-outline-warning">Detalhes</button>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <img src="./img/nc750.jpg" class="card-img-top" alt="...">
+          <div class="card-body">
+            <h5 class="card-title fs-4">NC 750x</h5>
+            <p class="card-text fs-5"><strong>Placa:</strong>FPF7G11</p>
+            <p class="fs-6" style="color: rgb(183, 3, 0); font-weight: 600;">Em andamento</p>
+            <button type="button" class="btn btn-outline-warning">Detalhes</button>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <img src="./img/xj6.jpg" class="card-img-top" alt="...">
+          <div class="card-body">
+            <h5 class="card-title fs-4">XJ6</h5>
+            <p class="card-text fs-5"><strong>Placa:</strong> KPZ4F94</p>
+            <p class="fs-6" style="color: rgb(183, 3, 0); font-weight: 600;">Em andamento</p>
+            <button type="button" class="btn btn-outline-warning">Detalhes</button>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <img src="./img/R1.jpg" class="card-img-top" alt="...">
+          <div class="card-body">
+            <h5 class="card-title fs-4">R1</h5>
+            <p class="card-text fs-5"><strong>Placa:</strong>LP05E11</p>
+            <p class="fs-6" style="color: rgb(30, 174, 30); font-weight: 600;">Serviço concluído</p>
+            <button type="button" class="btn btn-outline-warning">Detalhes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para criar nova moto -->
+  <div class="modal fade" id="novoServicoModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Novo Serviço</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Nome da Moto</label>
+            <input type="text" class="form-control" id="motoNome">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Placa</label>
+            <input type="text" class="form-control" id="placa">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Status</label>
+            <select class="form-select" id="status">
+              <option value="andamento">Em andamento</option>
+              <option value="concluido">Serviço concluído</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Imagem (URL)</label>
+            <input type="text" class="form-control" id="imagem">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-success" id="salvarServico">Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detalhes/Editar Moto -->
+  <div class="modal fade" id="detalhesModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="detalhesTitulo">Detalhes da Moto</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p id="detalhesPlaca"><strong>Placa:</strong> </p>
+          <div class="mb-3">
+            <label class="form-label">Status</label>
+            <select class="form-select" id="detalhesStatusSelect">
+              <option value="andamento">Em andamento</option>
+              <option value="concluido">Serviço concluído</option>
+            </select>
+          </div>
+           <div class="mb-3">
+            <label class="form-label">Cliente</label>
+            <input type="text" class="form-control" id="detalhesDescricao" rows="3"></input>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Contato</label>
+            <input type="number" class="form-control" id="detalhesDescricao" rows="3"></input>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Quilometragem</label>
+            <input type="number" class="form-control" id="detalhesQuilometragem">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Problemas / Observações</label>
+            <textarea class="form-control" id="detalhesDescricao" rows="3"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Adicionar nova imagem (URL)</label>
+            <input type="text" class="form-control" id="novaImagem">
+            <button class="btn btn-primary mt-2" id="adicionarImagem">Adicionar</button>
+          </div>
+          <div id="detalhesImagens" class="d-flex flex-wrap gap-2"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+document.getElementById("salvarServico").addEventListener("click", () => {
+  const nomeMoto = document.getElementById("motoNome").value.trim();
+  const placa = document.getElementById("placa").value.trim();
+  const status = document.getElementById("status").value;
+  const imagem = document.getElementById("imagem").value || "./img/default.jpg";
+
+  if (!nomeMoto || !placa) return alert("Preencha o nome da moto e a placa!");
+
+  const container = document.getElementById("cardsContainer");
+  const statusTexto = status === "andamento" ? "Em andamento" : "Serviço concluído";
+  const statusCor = status === "andamento" ? "rgb(183, 3, 0)" : "rgb(30, 174, 30)";
+
+  const col = document.createElement("div");
+  col.className = "col";
+  col.innerHTML = `
+    <div class="card">
+      <img src="${imagem}" class="card-img-top" alt="${nomeMoto}">
+      <div class="card-body">
+        <h5 class="card-title fs-4">${nomeMoto}</h5>
+        <p class="card-text fs-5"><strong>Placa:</strong> ${placa}</p>
+        <p class="fs-6" style="color: ${statusCor}; font-weight: 600;">${statusTexto}</p>
+        <button type="button" class="btn btn-outline-warning">Detalhes</button>
+      </div>
+    </div>
+  `;
+
+  const motoInfo = {
+    nome: nomeMoto,
+    placa,
+    statusTexto,
+    imagem,
+    quilometragem: "",
+    descricao: "",
+    imagensExtras: []
+  };
+
+  adicionarEventoDetalhes(col, motoInfo);
+  container.appendChild(col);
+  reorganizarCards();
+
+  bootstrap.Modal.getInstance(document.getElementById("novoServicoModal")).hide();
+  document.getElementById("motoNome").value = "";
+  document.getElementById("placa").value = "";
+  document.getElementById("imagem").value = "";
+  document.getElementById("status").value = "andamento";
+});
+
+function adicionarEventoDetalhes(card, motoInfo) {
+  const btnDetalhes = card.querySelector("button.btn-outline-warning");
+  btnDetalhes.addEventListener("click", () => {
+    const modalTitulo = document.getElementById("detalhesTitulo");
+    const modalPlaca = document.getElementById("detalhesPlaca");
+    const modalStatusSelect = document.getElementById("detalhesStatusSelect");
+    const inputQuilometragem = document.getElementById("detalhesQuilometragem");
+    const inputDescricao = document.getElementById("detalhesDescricao");
+    const inputNovaImagem = document.getElementById("novaImagem");
+    const divImagens = document.getElementById("detalhesImagens");
+    const btnAdicionarImagem = document.getElementById("adicionarImagem");
+
+    modalTitulo.textContent = motoInfo.nome;
+    modalPlaca.innerHTML = `<strong>Placa:</strong> ${motoInfo.placa}`;
+    modalStatusSelect.value = motoInfo.statusTexto === "Em andamento" ? "andamento" : "concluido";
+    inputQuilometragem.value = motoInfo.quilometragem;
+    inputDescricao.value = motoInfo.descricao;
+
+    divImagens.innerHTML = "";
+    const imgPrincipal = document.createElement("img");
+    imgPrincipal.src = motoInfo.imagem;
+    imgPrincipal.alt = motoInfo.nome;
+    imgPrincipal.style.width = "150px";
+    imgPrincipal.style.height = "auto";
+    imgPrincipal.className = "border rounded";
+    divImagens.appendChild(imgPrincipal);
+
+    motoInfo.imagensExtras.forEach(url => {
+      const img = document.createElement("img");
+      img.src = url;
+      img.alt = motoInfo.nome;
+      img.style.width = "150px";
+      img.style.height = "auto";
+      img.className = "border rounded";
+      divImagens.appendChild(img);
+    });
+
+    modalStatusSelect.onchange = () => {
+      motoInfo.statusTexto = modalStatusSelect.value === "andamento" ? "Em andamento" : "Serviço concluído";
+      const pStatus = card.querySelector('p.fs-6');
+      pStatus.textContent = motoInfo.statusTexto;
+      pStatus.style.color = motoInfo.statusTexto === "Em andamento" ? "rgb(183, 3, 0)" : "rgb(30, 174, 30)";
+      reorganizarCards();
+    };
+
+    inputQuilometragem.oninput = () => motoInfo.quilometragem = inputQuilometragem.value;
+    inputDescricao.oninput = () => motoInfo.descricao = inputDescricao.value;
+
+    btnAdicionarImagem.onclick = () => {
+      const url = inputNovaImagem.value.trim();
+      if (!url) return alert("Insira a URL da imagem!");
+      motoInfo.imagensExtras.push(url);
+      const img = document.createElement("img");
+      img.src = url;
+      img.alt = motoInfo.nome;
+      img.style.width = "150px";
+      img.style.height = "auto";
+      img.className = "border rounded";
+      divImagens.appendChild(img);
+      inputNovaImagem.value = "";
+    };
+
+    new bootstrap.Modal(document.getElementById("detalhesModal")).show();
+  });
+}
+
+function reorganizarCards() {
+  const container = document.getElementById("cardsContainer");
+  const cards = Array.from(container.children);
+  const andamento = cards.filter(card => card.querySelector('p.fs-6').textContent.includes('Em andamento'));
+  const concluido = cards.filter(card => card.querySelector('p.fs-6').textContent.includes('Serviço concluído'));
+  container.innerHTML = "";
+  andamento.forEach(card => container.appendChild(card));
+  concluido.forEach(card => container.appendChild(card));
+}
+
+// Inicializar eventos de detalhes para cards existentes
+document.querySelectorAll("#cardsContainer .col").forEach(col => {
+  const nome = col.querySelector(".card-title").textContent;
+  const placa = col.querySelector(".card-text strong").nextSibling.textContent.trim();
+  const statusTexto = col.querySelector(".fs-6").textContent;
+  const imagem = col.querySelector("img").src;
+  const motoInfo = { nome, placa, statusTexto, imagem, quilometragem: "", descricao: "", imagensExtras: [] };
+  adicionarEventoDetalhes(col, motoInfo);
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
