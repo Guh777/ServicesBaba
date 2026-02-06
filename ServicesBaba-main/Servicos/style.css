@@ -16,5 +16,8 @@ background-color:  rgb(140, 140, 140);
   height: 150px;
   object-fit: cover;
 }
+#btnTrocaOleo {
+  margin-top: 10px;
+}
 
 
