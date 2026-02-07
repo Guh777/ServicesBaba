@@ -1,0 +1,23 @@
+
+
+body {  
+background-color:  rgb(140, 140, 140);
+}
+
+
+
+.card {
+ 
+  margin-top: 20px;
+}
+
+/* imagem com altura fixa */
+.card-img-top {
+  height: 150px;
+  object-fit: cover;
+}
+#btnTrocaOleo {
+  margin-top: 10px;
+}
+
+
