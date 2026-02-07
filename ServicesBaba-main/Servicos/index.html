@@ -16,8 +16,8 @@
 <div class="container-fluid">
 
 <form class="d-flex">
-<input class="form-control me-2" type="search" placeholder="Search" id="searchInput"/>
-<button class="btn btn-outline-success" id="btnPesquisar">Pesquisar</button>
+<input class="form-control me-2" type="search" placeholder="Digite o Nome/Placa" id="searchInput"/>
+
 </form>
 
 <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#novoServicoModal">
@@ -195,6 +195,16 @@
 
 
 <script>
+ let motoSelecionada = null;
+
+const btnTrocaOleo = document.getElementById("btnTrocaOleo");
+const formTrocaOleo = document.getElementById("formTrocaOleo");
+const alertaTrocaOleo = document.getElementById("alertaTrocaOleo");
+if (btnTrocaOleo && formTrocaOleo) {
+  btnTrocaOleo.onclick = () => {
+    formTrocaOleo.classList.toggle("d-none");
+  };
+}
 document.getElementById("salvarServico").onclick = () => {
 
 const nomeMoto = motoNome.value.trim();
@@ -236,6 +246,9 @@ historico: [],
 galeria: [],
 contador: 0
 };
+motoInfo.card = col;
+col.motoInfo = motoInfo;
+
 
 adicionarEventoDetalhes(col, motoInfo);
 cardsContainer.appendChild(col);
@@ -271,6 +284,9 @@ function adicionarEventoDetalhes(card, motoInfo){
 
   // 🔍 BOTÃO DETALHES
   btnDetalhes.onclick = () => {
+    motoSelecionada = motoInfo;
+    carregarFormTrocaOleo(motoInfo);
+    formTrocaOleo.classList.add("d-none");
 
     // Dados
     detalhesTitulo.textContent = motoInfo.nome;
@@ -529,13 +545,6 @@ function filtrarCards() {
   });
 }
 
-// 🔹 Botão Pesquisar
-btnPesquisar.onclick = (e) => {
-  e.preventDefault(); // evita submit
-  filtrarCards();
-};
-
-// 🔹 Atalho Ctrl+F
 document.addEventListener("keydown", (e) => {
   if (e.ctrlKey && e.key.toLowerCase() === "f") {
     e.preventDefault(); // previne a busca do navegador
@@ -548,9 +557,7 @@ document.addEventListener("keydown", (e) => {
 searchInput.addEventListener("input", filtrarCards);
 
 // Toggle formulário de troca de óleo
-const btnTrocaOleo = document.getElementById("btnTrocaOleo");
-const formTrocaOleo = document.getElementById("formTrocaOleo");
-const alertaTrocaOleo = document.getElementById("alertaTrocaOleo");
+
 
 btnTrocaOleo.onclick = () => {
   formTrocaOleo.classList.toggle("d-none");
@@ -558,25 +565,30 @@ btnTrocaOleo.onclick = () => {
 
 // Salvar troca de óleo
 document.getElementById("salvarTrocaOleo").onclick = () => {
+  if (!motoSelecionada) {
+    alert("Nenhuma moto selecionada.");
+    return;
+  }
+
   const tipoOleo = document.getElementById("tipoOleo").value.trim();
   const kmAtual = parseInt(document.getElementById("kmAtual").value);
   const kmProx = parseInt(document.getElementById("kmProximaTroca").value);
   const mesesProx = parseInt(document.getElementById("mesesProximaTroca").value);
 
   if(!tipoOleo && !kmAtual && !kmProx && !mesesProx){
-    alert("Preencha ao menos algum campo para registrar a troca.");
+    alert("Preencha ao menos algum campo.");
     return;
   }
 
   const agora = new Date();
   let dataProx = null;
+
   if(mesesProx){
     dataProx = new Date();
     dataProx.setMonth(agora.getMonth() + mesesProx);
   }
 
-  // Salva info no motoInfo (adiciona atributo opcional)
-  motoInfo.oleo = {
+  motoSelecionada.oleo = {
     tipo: tipoOleo,
     kmAtual: kmAtual || 0,
     kmProx: kmProx || 0,
@@ -584,21 +596,98 @@ document.getElementById("salvarTrocaOleo").onclick = () => {
     dataProx: dataProx ? dataProx.getTime() : null
   };
 
-  // Checa se já passou
-  let aviso = "";
-  if(kmProx && kmAtual >= kmProx){
-    aviso += `⚠ Quilometragem atingiu ou passou a próxima troca (${kmProx} km). `;
-  }
-  if(dataProx && agora.getTime() >= dataProx.getTime()){
-    aviso += "⚠ Já passou a data da próxima troca. ";
-  }
-
-  alertaTrocaOleo.textContent = aviso;
-  if(!aviso) alertaTrocaOleo.textContent = "Troca registrada com sucesso.";
-
-  // Fecha formulário
+  alertaTrocaOleo.textContent = "Troca registrada com sucesso.";
   formTrocaOleo.classList.add("d-none");
+  verificarAlertasTrocaOleo();
+
 };
+
+function verificarAlertasTrocaOleo() {
+  const lista = document.getElementById("listaAlertas");
+  const badge = document.getElementById("contagemAlertas");
+
+  lista.innerHTML = "";
+  let totalAlertas = 0;
+  const agora = new Date().getTime();
+
+  document.querySelectorAll("#cardsContainer .col").forEach(col => {
+    const card = col.querySelector(".card");
+
+// pega a motoInfo vinculada ao card
+const motoInfo = col.motoInfo;
+if (!motoInfo || !motoInfo.oleo) return;
+
+const titulo = card.querySelector(".card-title").textContent;
+const placa = motoInfo.placa;
+
+    if (!motoInfo || !motoInfo.oleo) return;
+
+    const oleo = motoInfo.oleo;
+    let mensagens = [];
+
+    if (oleo.kmProx && oleo.kmAtual >= oleo.kmProx) {
+      mensagens.push("Quilometragem atingida");
+    }
+
+    if (oleo.dataProx && agora >= oleo.dataProx) {
+      mensagens.push("Prazo de meses vencido");
+    }
+
+    if (mensagens.length) {
+      totalAlertas++;
+
+      const li = document.createElement("li");
+li.className = "dropdown-item text-danger";
+li.style.cursor = "pointer";
+
+li.innerHTML = `
+  <strong>${titulo}</strong>
+  <span class="text-muted"> - ${placa}</span><br>
+  <small>${mensagens.join(" / ")}</small>
+`;
+
+li.onclick = () => {
+  // fecha o dropdown
+  document.getElementById("btnAlertas").click();
+
+  // define moto selecionada
+  motoSelecionada = motoInfo;
+
+  // abre detalhes simulando clique no botão do card
+  const btnDetalhes = motoInfo.card.querySelector("button");
+  btnDetalhes.click();
+};
+
+lista.appendChild(li);
+    }
+  });
+
+  badge.textContent = totalAlertas;
+}
+setInterval(verificarAlertasTrocaOleo, 60000); // a cada 1 minuto
+
+verificarAlertasTrocaOleo();
+function carregarFormTrocaOleo(motoInfo){
+  const tipoOleo = document.getElementById("tipoOleo");
+  const kmAtual = document.getElementById("kmAtual");
+  const kmProx = document.getElementById("kmProximaTroca");
+  const mesesProx = document.getElementById("mesesProximaTroca");
+  const alerta = document.getElementById("alertaTrocaOleo");
+
+  alerta.textContent = "";
+
+  if (motoInfo.oleo) {
+    tipoOleo.value = motoInfo.oleo.tipo || "";
+    kmAtual.value = motoInfo.oleo.kmAtual || "";
+    kmProx.value = motoInfo.oleo.kmProx || "";
+    mesesProx.value = motoInfo.oleo.mesesProx || "";
+  } else {
+    tipoOleo.value = "";
+    kmAtual.value = "";
+    kmProx.value = "";
+    mesesProx.value = "";
+  }
+}
 
 
 </script>
