@@ -11,21 +11,48 @@
 </head>
 
 <body>
+<div id="loginScreen" class="d-flex vh-100 justify-content-center align-items-center bg-dark">
+  <div class="card p-4 shadow" style="width: 350px;">
+    <h4 class="text-center mb-3">Babalu Motos</h4>
 
-<nav class="navbar bg-body-tertiary">
-<div class="container-fluid">
+    <input type="email" id="loginEmail" class="form-control mb-2" placeholder="Email">
+    <input type="password" id="loginSenha" class="form-control mb-3" placeholder="Senha">
 
-<form class="d-flex">
-<input class="form-control me-2" type="search" placeholder="Digite o Nome/Placa" id="searchInput"/>
+    <button class="btn btn-primary w-100" id="btnLogin">Entrar</button>
 
-</form>
-
-<button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#novoServicoModal">
-<i class="bi bi-plus-circle"></i> Adicionar Novo
-</button>
-
+    <small class="text-danger mt-2 d-none" id="loginErro"></small>
+  </div>
 </div>
-<!-- Aba de alertas -->
+<div id="app" class="d-none">
+<nav class="navbar">
+  <div class="container-fluid position-relative d-flex align-items-center">
+
+    <!-- ESQUERDA -->
+    <div class="d-flex align-items-center gap-2">
+      <input class="form-control" type="search" placeholder="Digite o Nome/Placa" id="searchInput"/>
+    </div>
+
+    <!-- TEXTO ESQUERDO -->
+    <div class="nav-text nav-text-left">BABALU</div>
+
+    <!-- LOGO CENTRAL -->
+    <div class="nav-logo">
+      <img src="./img/logobaba.png" alt="Babalu Motos">
+    </div>
+
+    <!-- TEXTO DIREITO -->
+    <div class="nav-text nav-text-right">MOTOS</div>
+
+    <!-- DIREITA -->
+    <div class="ms-auto">
+      <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#novoServicoModal">
+        <i class="bi bi-plus-circle"></i> Adicionar Novo
+      </button>
+    </div>
+
+  </div>
+</nav>
+
 <div class="dropdown d-inline">
   <button class="btn btn-warning dropdown-toggle" type="button" data-bs-toggle="dropdown" id="btnAlertas">
     ⚠ Troca de Óleo <span class="badge bg-danger" id="contagemAlertas">0</span>
@@ -34,9 +61,6 @@
     <!-- Alertas serão inseridos aqui -->
   </ul>
 </div>
-
-</div>
-</nav>
 
 <!-- Cards -->
   <div class="container">
@@ -192,170 +216,158 @@
     </div>
   </div>
 </div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import {
+    getAuth,
+    signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+  import {
+    getFirestore,
+    collection,
+    doc,
+    setDoc,
+    getDocs,
+    deleteDoc
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyC48hyWdVdL1d54DMyys7qq2o7zp2tpxHc",
+    authDomain: "babalu-motos.firebaseapp.com",
+    projectId: "babalu-motos",
+    storageBucket: "babalu-motos.appspot.com",
+    messagingSenderId: "56196844709",
+    appId: "1:56196844709:web:dba13125edd80228f1914c"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // 🔓 expõe pro resto do código
+  window.auth = auth;
+  window.db = db;
+  window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+  window.signOut = signOut;
+  window.onAuthStateChanged = onAuthStateChanged;
+  window.collection = collection;
+  window.doc = doc;
+  window.setDoc = setDoc;
+  window.getDocs = getDocs;
+  window.deleteDoc = deleteDoc;
+</script>
 
 
 <script>
- let motoSelecionada = null;
+  // 🔹 ELEMENTOS DE LOGIN / APP
+  const loginScreen = document.getElementById("loginScreen");
+  const appScreen = document.getElementById("app");
+  const erroLogin = document.getElementById("loginErro");
+  const cardsContainer = document.getElementById("cardsContainer");
 
-const btnTrocaOleo = document.getElementById("btnTrocaOleo");
-const formTrocaOleo = document.getElementById("formTrocaOleo");
-const alertaTrocaOleo = document.getElementById("alertaTrocaOleo");
-if (btnTrocaOleo && formTrocaOleo) {
-  btnTrocaOleo.onclick = () => {
-    formTrocaOleo.classList.toggle("d-none");
+  // 🔹 LOGIN SIMPLIFICADO (apenas para mostrar app)
+  document.getElementById("btnLogin").onclick = () => {
+    const email = document.getElementById("loginEmail").value.trim();
+    const senha = document.getElementById("loginSenha").value.trim();
+
+    if (!email || !senha) {
+      erroLogin.textContent = "Preencha email e senha!";
+      erroLogin.classList.remove("d-none");
+      return;
+    }
+
+    // login fictício: mostra app
+    loginScreen.classList.add("d-none");
+    appScreen.classList.remove("d-none");
   };
-}
-document.getElementById("salvarServico").onclick = () => {
 
-const nomeMoto = motoNome.value.trim();
-const placaMoto = placa.value.trim();
-const cliente = clienteNome.value.trim();
-const contato = clienteContato.value.trim();
-const status = document.getElementById("status").value;
-const imagem = document.getElementById("imagem").value || "./img/default.jpg";
+  // 🔹 VARIÁVEIS GLOBAIS
+  let motoSelecionada = null;
 
-if(!nomeMoto || !placaMoto || !cliente) return alert("Preencha tudo");
+  const btnTrocaOleo = document.getElementById("btnTrocaOleo");
+  const formTrocaOleo = document.getElementById("formTrocaOleo");
+  const alertaTrocaOleo = document.getElementById("alertaTrocaOleo");
+  const novoServicoModal = document.getElementById("novoServicoModal");
+  const salvarServicoBtn = document.getElementById("salvarServico");
 
-const statusTexto = status === "andamento" ? "Em andamento" : "Serviço concluído";
-const statusCor = status === "andamento" ? "text-danger" : "text-success";
+  const motoNome = document.getElementById("motoNome");
+  const placa = document.getElementById("placa");
+  const clienteNome = document.getElementById("clienteNome");
+  const clienteContato = document.getElementById("clienteContato");
+  const status = document.getElementById("status");
+  const imagem = document.getElementById("imagem");
 
-const col = document.createElement("div");
-col.className = "col";
+  // 🔹 TOGGLE FORM TROCA DE ÓLEO
+  if (btnTrocaOleo && formTrocaOleo) {
+    btnTrocaOleo.onclick = () => formTrocaOleo.classList.toggle("d-none");
+  }
 
-col.innerHTML = `
-<div class="card">
-<img src="${imagem}" class="card-img-top">
-<div class="card-body">
-<h5 class="card-title">${nomeMoto}</h5>
-<p class="card-text"><strong>Placa:</strong> ${placaMoto}</p>
-<p class="fs-6 fw-bold ${statusCor}">${statusTexto}</p>
-<button class="btn btn-outline-warning">Detalhes</button>
-<button class="btn btn-outline-secondary">Galeria</button>
-</div>
-</div>
-`;
+  // 🔹 SALVAR NOVO SERVIÇO
+  salvarServicoBtn.onclick = () => {
+    const nomeMotoVal = motoNome.value.trim();
+    const placaVal = placa.value.trim();
+    const clienteVal = clienteNome.value.trim();
+    const contatoVal = clienteContato.value.trim();
+    const statusVal = status.value;
+    const imagemVal = imagem.value || "./img/default.jpg";
 
-const motoInfo = {
-nome: nomeMoto,
-placa: placaMoto,
-clienteNome: cliente,
-clienteContato: contato,
-statusTexto,
-imagem,
-historico: [],
-galeria: [],
-contador: 0
-};
-motoInfo.card = col;
-col.motoInfo = motoInfo;
+    if (!nomeMotoVal || !placaVal || !clienteVal) {
+      return alert("Preencha todos os campos!");
+    }
 
+    const statusTexto = statusVal === "andamento" ? "Em andamento" : "Serviço concluído";
+    const statusCor = statusVal === "andamento" ? "text-danger" : "text-success";
 
-adicionarEventoDetalhes(col, motoInfo);
-cardsContainer.appendChild(col);
+    const col = document.createElement("div");
+    col.className = "col";
+    col.innerHTML = `
+      <div class="card">
+        <img src="${imagemVal}" class="card-img-top">
+        <div class="card-body">
+          <h5 class="card-title">${nomeMotoVal}</h5>
+          <p class="card-text"><strong>Placa:</strong> ${placaVal}</p>
+          <p class="fs-6 fw-bold ${statusCor}">${statusTexto}</p>
+          <button class="btn btn-outline-warning">Detalhes</button>
+          <button class="btn btn-outline-secondary">Galeria</button>
+        </div>
+      </div>
+    `;
 
-bootstrap.Modal.getInstance(novoServicoModal).hide();
-};
-
-// 🔹 LIMPAR MODAL AO ABRIR
-novoServicoModal.addEventListener("show.bs.modal", () => {
-motoNome.value = "";
-placa.value = "";
-clienteNome.value = "";
-clienteContato.value = "";
-imagem.value = "";
-status.value = "andamento";
-});
-
-// 🔹 RENDERIZA HISTÓRICO ORDENADO
-function renderizarHistorico(motoInfo){
-historicoAccordion.innerHTML = "";
-
-motoInfo.historico
-.sort((a,b) => b.timestamp - a.timestamp)
-.forEach(nota => adicionarNotaUI(nota));
-}
-
-function adicionarEventoDetalhes(card, motoInfo){
-
-  // 🔘 pega os dois botões do card
-  const botoes = card.querySelectorAll("button");
-  const btnDetalhes = botoes[0];
-  const btnGaleria  = botoes[1];
-
-  // 🔍 BOTÃO DETALHES
-  btnDetalhes.onclick = () => {
-    motoSelecionada = motoInfo;
-    carregarFormTrocaOleo(motoInfo);
-    formTrocaOleo.classList.add("d-none");
-
-    // Dados
-    detalhesTitulo.textContent = motoInfo.nome;
-    detalhesPlaca.innerHTML = "<b>Placa:</b> " + motoInfo.placa;
-    detalhesCliente.innerHTML = "<b>Cliente:</b> " + motoInfo.clienteNome;
-    detalhesContato.innerHTML = "<b>Contato:</b> " + (motoInfo.clienteContato || "-");
-
-    // Select
-    detalhesStatusSelect.value =
-      motoInfo.statusTexto === "Em andamento" ? "andamento" : "concluido";
-
-    // Histórico
-    renderizarHistorico(motoInfo);
-
-    // 🔥 STATUS AUTOMÁTICO
-    detalhesStatusSelect.onchange = () => {
-
-      const agora = new Date();
-      const timestamp = agora.getTime();
-      const novoStatus = detalhesStatusSelect.value;
-
-      const statusTexto =
-        novoStatus === "andamento"
-          ? "Em andamento"
-          : "Serviço concluído";
-
-      const statusCor =
-        novoStatus === "andamento"
-          ? "text-danger"
-          : "text-success";
-
-      motoInfo.statusTexto = statusTexto;
-
-      // Card
-      const statusElemento =
-        card.querySelector(".card-body p.fw-bold");
-
-      statusElemento.textContent = statusTexto;
-      statusElemento.classList.remove("text-danger","text-success");
-      statusElemento.classList.add(statusCor);
-
-      // Move card
-      if(novoStatus === "concluido"){
-        cardsContainer.appendChild(card);
-      }else{
-        cardsContainer.prepend(card);
-      }
-
-      // Data
-      const dataHora =
-        agora.toLocaleDateString("pt-BR")+" "+
-        agora.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
-
-      ultimaAtualizacao.textContent =
-        "Última atualização: " + dataHora;
-
-      // Histórico
-      motoInfo.historico.push({
-        titulo: "Status alterado",
-        texto: "Status alterado para: " + statusTexto,
-        dataHora,
-        timestamp
-      });
-
-      renderizarHistorico(motoInfo);
+    const motoInfo = {
+      nome: nomeMotoVal,
+      placa: placaVal,
+      clienteNome: clienteVal,
+      clienteContato: contatoVal,
+      statusTexto,
+      statusCor,
+      imagem: imagemVal,
+      historico: [],
+      galeria: [],
+      contador: 0
     };
 
-    // 📝 ANOTAÇÃO
-    adicionarNota.onclick = () => {
+    motoInfo.card = col;
+    col.motoInfo = motoInfo;
+
+    adicionarEventoDetalhes(col, motoInfo);
+    cardsContainer.appendChild(col);
+
+    bootstrap.Modal.getInstance(novoServicoModal).hide();
+  };
+
+  // 🔹 LIMPAR MODAL AO ABRIR
+  novoServicoModal.addEventListener("show.bs.modal", () => {
+    motoNome.value = "";
+    placa.value = "";
+    clienteNome.value = "";
+    clienteContato.value = "";
+    imagem.value = "";
+    status.value = "andamento";
+  });
+ adicionarNota.onclick = () => {
 
       const titulo = tituloNota.value.trim();
       const texto = textoNota.value.trim();
@@ -383,318 +395,102 @@ function adicionarEventoDetalhes(card, motoInfo){
       tituloNota.value = "";
       textoNota.value = "";
     };
-const btnExcluir = document.getElementById("excluirMoto");
-btnExcluir.onclick = () => {
-  if(confirm(`Deseja realmente excluir a moto "${motoInfo.nome}"?`)) {
-    card.remove();
-    bootstrap.Modal.getInstance(detalhesModal).hide();
-  }
-};
-    new bootstrap.Modal(detalhesModal).show();
-  };
-
-  // 📷 BOTÃO GALERIA
-  btnGaleria.onclick = () => {
-    abrirGaleria(motoInfo);
-  };
-}
-
-
-
-function adicionarNotaUI(nota){
-
-  const id = "nota_" + nota.timestamp;
-
-  const item = document.createElement("div");
-  item.className = "accordion-item";
-
-  item.innerHTML = `
-  <h2 class="accordion-header">
-    <button class="accordion-button"
-      data-bs-toggle="collapse"
-      data-bs-target="#${id}">
-      ${nota.titulo}
-      <small class="ms-2 text-muted"><strong>(${nota.dataHora})</strong></small>
-    </button>
-  </h2>
-
-  <div id="${id}" class="accordion-collapse collapse">
-    <div class="accordion-body">
-
-      <div class="nota-texto" style="white-space:pre-wrap; cursor:text">
-        ${nota.texto}
-      </div>
-
-      <textarea class="form-control d-none nota-edicao" rows="4">${nota.texto}</textarea>
-
-      <button class="btn btn-sm btn-success mt-2 d-none salvar-nota">
-        <i class="bi bi-check-lg"></i> Salvar
-      </button>
-
-    </div>
-  </div>
-  `;
-
-  historicoAccordion.appendChild(item);
-
-  const divTexto = item.querySelector(".nota-texto");
-  const textarea = item.querySelector(".nota-edicao");
-  const btnSalvar = item.querySelector(".salvar-nota");
-
-  let textoOriginal = nota.texto;
-
-  /* 👉 CLICOU NO TEXTO → EDITAR */
-  divTexto.onclick = () => {
-    divTexto.classList.add("d-none");
-    textarea.classList.remove("d-none");
-    textarea.focus();
-  };
-
-  /* 🔥 MOSTRAR SALVAR SÓ SE ALTERAR */
-  textarea.addEventListener("input", () => {
-    if (textarea.value.trim() !== textoOriginal.trim()) {
-      btnSalvar.classList.remove("d-none");
-    } else {
-      btnSalvar.classList.add("d-none");
+  // 🔹 TROCA DE ÓLEO
+  document.getElementById("salvarTrocaOleo").onclick = () => {
+    if (!motoSelecionada) {
+      return alert("Nenhuma moto selecionada.");
     }
-  });
 
-  /* 💾 SALVAR */
-  btnSalvar.onclick = () => {
-  const novoTexto = textarea.value.trim();
-  if (!novoTexto) return;
+    const tipoOleo = document.getElementById("tipoOleo").value.trim();
+    const kmAtual = parseInt(document.getElementById("kmAtual").value) || 0;
+    const kmProx = parseInt(document.getElementById("kmProximaTroca").value) || 0;
+    const mesesProx = parseInt(document.getElementById("mesesProximaTroca").value) || 0;
 
-  const agora = new Date();
+    if (!tipoOleo && !kmAtual && !kmProx && !mesesProx) return alert("Preencha ao menos algum campo.");
 
-  nota.texto = novoTexto;
-  nota.dataHora =
-    agora.toLocaleDateString("pt-BR") + " " +
-    agora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    const agora = new Date();
+    let dataProx = null;
+    if (mesesProx) {
+      dataProx = new Date();
+      dataProx.setMonth(agora.getMonth() + mesesProx);
+    }
 
-  nota.timestamp = agora.getTime();
-
-  // atualiza texto visível
-  divTexto.textContent = novoTexto;
-
-  // sai do modo edição
-  textarea.classList.add("d-none");
-  divTexto.classList.remove("d-none");
-
-  // 🔥 ESCONDE O BOTÃO SALVAR
-  btnSalvar.classList.add("d-none");
-
-  // atualiza referência do texto original
-  textoOriginal = novoTexto;
-};
-
-}
-
-function abrirGaleria(motoInfo){
-  const galeriaContainer = document.getElementById("galeriaContainer");
-  const uploadFotos = document.getElementById("uploadFotos");
-
-  galeriaContainer.innerHTML = "";
-
-  motoInfo.galeria.forEach(src => criarThumb(src));
-
-  uploadFotos.onchange = () => {
-    [...uploadFotos.files].forEach(file => {
-      const reader = new FileReader();
-      reader.onload = e => {
-        motoInfo.galeria.push(e.target.result);
-        criarThumb(e.target.result);
-      };
-      reader.readAsDataURL(file);
-    });
-    uploadFotos.value = "";
-  };
-
-  new bootstrap.Modal(galeriaModal).show();
-
-  function criarThumb(src){
-    const col = document.createElement("div");
-    col.className = "col-6 col-md-3";
-
-    col.innerHTML = `
-      <img src="${src}" class="img-fluid rounded shadow-sm" style="cursor:pointer">
-    `;
-
-    col.querySelector("img").onclick = () => {
-      document.getElementById("fotoGrande").src = src;
-      new bootstrap.Modal(fotoModal).show();
+    motoSelecionada.oleo = {
+      tipo: tipoOleo,
+      kmAtual,
+      kmProx,
+      mesesProx,
+      dataProx: dataProx ? dataProx.getTime() : null
     };
 
-    galeriaContainer.appendChild(col);
-  }
-}
-const searchInput = document.getElementById("searchInput");
-const btnPesquisar = document.getElementById("btnPesquisar");
-
-function filtrarCards() {
-  const termo = searchInput.value.toLowerCase();
-  const cards = cardsContainer.querySelectorAll(".card");
-
-  cards.forEach(card => {
-    const titulo = card.querySelector(".card-title").textContent.toLowerCase();
-    const placa = card.querySelector(".card-text").textContent.toLowerCase();
-    if (titulo.includes(termo) || placa.includes(termo)) {
-      card.parentElement.style.display = ""; // mostra card
-    } else {
-      card.parentElement.style.display = "none"; // esconde card
-    }
-  });
-}
-
-document.addEventListener("keydown", (e) => {
-  if (e.ctrlKey && e.key.toLowerCase() === "f") {
-    e.preventDefault(); // previne a busca do navegador
-    searchInput.focus();
-    searchInput.select();
-  }
-});
-
-// 🔹 Filtra enquanto digita (opcional)
-searchInput.addEventListener("input", filtrarCards);
-
-// Toggle formulário de troca de óleo
-
-
-btnTrocaOleo.onclick = () => {
-  formTrocaOleo.classList.toggle("d-none");
-};
-
-// Salvar troca de óleo
-document.getElementById("salvarTrocaOleo").onclick = () => {
-  if (!motoSelecionada) {
-    alert("Nenhuma moto selecionada.");
-    return;
-  }
-
-  const tipoOleo = document.getElementById("tipoOleo").value.trim();
-  const kmAtual = parseInt(document.getElementById("kmAtual").value);
-  const kmProx = parseInt(document.getElementById("kmProximaTroca").value);
-  const mesesProx = parseInt(document.getElementById("mesesProximaTroca").value);
-
-  if(!tipoOleo && !kmAtual && !kmProx && !mesesProx){
-    alert("Preencha ao menos algum campo.");
-    return;
-  }
-
-  const agora = new Date();
-  let dataProx = null;
-
-  if(mesesProx){
-    dataProx = new Date();
-    dataProx.setMonth(agora.getMonth() + mesesProx);
-  }
-
-  motoSelecionada.oleo = {
-    tipo: tipoOleo,
-    kmAtual: kmAtual || 0,
-    kmProx: kmProx || 0,
-    mesesProx: mesesProx || 0,
-    dataProx: dataProx ? dataProx.getTime() : null
+    alertaTrocaOleo.textContent = "Troca registrada com sucesso.";
+    formTrocaOleo.classList.add("d-none");
+    verificarAlertasTrocaOleo();
   };
 
-  alertaTrocaOleo.textContent = "Troca registrada com sucesso.";
-  formTrocaOleo.classList.add("d-none");
+  // 🔹 VERIFICAR ALERTAS DE TROCA DE ÓLEO
+  function verificarAlertasTrocaOleo() {
+    const lista = document.getElementById("listaAlertas");
+    const badge = document.getElementById("contagemAlertas");
+
+    lista.innerHTML = "";
+    let totalAlertas = 0;
+    const agora = Date.now();
+
+    document.querySelectorAll("#cardsContainer .col").forEach(col => {
+      const motoInfo = col.motoInfo;
+      if (!motoInfo || !motoInfo.oleo) return;
+
+      const mensagens = [];
+      const oleo = motoInfo.oleo;
+
+      if (oleo.kmProx && oleo.kmAtual >= oleo.kmProx) mensagens.push("Quilometragem atingida");
+      if (oleo.dataProx && agora >= oleo.dataProx) mensagens.push("Prazo de meses vencido");
+
+      if (mensagens.length) {
+        totalAlertas++;
+        const li = document.createElement("li");
+        li.className = "dropdown-item text-danger";
+        li.style.cursor = "pointer";
+        li.innerHTML = `<strong>${motoInfo.nome}</strong> - ${motoInfo.placa}<br><small>${mensagens.join(" / ")}</small>`;
+        li.onclick = () => {
+          document.getElementById("btnAlertas").click();
+          motoSelecionada = motoInfo;
+          motoInfo.card.querySelector("button").click();
+        };
+        lista.appendChild(li);
+      }
+    });
+
+    badge.textContent = totalAlertas;
+  }
+
+  setInterval(verificarAlertasTrocaOleo, 60000);
   verificarAlertasTrocaOleo();
 
-};
+  // 🔹 FUNÇÃO VAZIA DE DETALHES (adicione depois)
+  function adicionarEventoDetalhes(col, motoInfo) {
+    const btnDetalhes = col.querySelector("button.btn-outline-warning");
+    btnDetalhes.onclick = () => {
+      motoSelecionada = motoInfo;
+      // Aqui você pode abrir modal detalhes
+      const detalhesModal = new bootstrap.Modal(document.getElementById("detalhesModal"));
+      detalhesModal.show();
 
-function verificarAlertasTrocaOleo() {
-  const lista = document.getElementById("listaAlertas");
-  const badge = document.getElementById("contagemAlertas");
-
-  lista.innerHTML = "";
-  let totalAlertas = 0;
-  const agora = new Date().getTime();
-
-  document.querySelectorAll("#cardsContainer .col").forEach(col => {
-    const card = col.querySelector(".card");
-
-// pega a motoInfo vinculada ao card
-const motoInfo = col.motoInfo;
-if (!motoInfo || !motoInfo.oleo) return;
-
-const titulo = card.querySelector(".card-title").textContent;
-const placa = motoInfo.placa;
-
-    if (!motoInfo || !motoInfo.oleo) return;
-
-    const oleo = motoInfo.oleo;
-    let mensagens = [];
-
-    if (oleo.kmProx && oleo.kmAtual >= oleo.kmProx) {
-      mensagens.push("Quilometragem atingida");
-    }
-
-    if (oleo.dataProx && agora >= oleo.dataProx) {
-      mensagens.push("Prazo de meses vencido");
-    }
-
-    if (mensagens.length) {
-      totalAlertas++;
-
-      const li = document.createElement("li");
-li.className = "dropdown-item text-danger";
-li.style.cursor = "pointer";
-
-li.innerHTML = `
-  <strong>${titulo}</strong>
-  <span class="text-muted"> - ${placa}</span><br>
-  <small>${mensagens.join(" / ")}</small>
-`;
-
-li.onclick = () => {
-  // fecha o dropdown
-  document.getElementById("btnAlertas").click();
-
-  // define moto selecionada
-  motoSelecionada = motoInfo;
-
-  // abre detalhes simulando clique no botão do card
-  const btnDetalhes = motoInfo.card.querySelector("button");
-  btnDetalhes.click();
-};
-
-lista.appendChild(li);
-    }
-  });
-
-  badge.textContent = totalAlertas;
-}
-setInterval(verificarAlertasTrocaOleo, 60000); // a cada 1 minuto
-
-verificarAlertasTrocaOleo();
-function carregarFormTrocaOleo(motoInfo){
-  const tipoOleo = document.getElementById("tipoOleo");
-  const kmAtual = document.getElementById("kmAtual");
-  const kmProx = document.getElementById("kmProximaTroca");
-  const mesesProx = document.getElementById("mesesProximaTroca");
-  const alerta = document.getElementById("alertaTrocaOleo");
-
-  alerta.textContent = "";
-
-  if (motoInfo.oleo) {
-    tipoOleo.value = motoInfo.oleo.tipo || "";
-    kmAtual.value = motoInfo.oleo.kmAtual || "";
-    kmProx.value = motoInfo.oleo.kmProx || "";
-    mesesProx.value = motoInfo.oleo.mesesProx || "";
-  } else {
-    tipoOleo.value = "";
-    kmAtual.value = "";
-    kmProx.value = "";
-    mesesProx.value = "";
+      document.getElementById("detalhesTitulo").textContent = motoInfo.nome;
+      document.getElementById("detalhesPlaca").textContent = `Placa: ${motoInfo.placa}`;
+      document.getElementById("detalhesCliente").textContent = `Cliente: ${motoInfo.clienteNome}`;
+      document.getElementById("detalhesContato").textContent = `Contato: ${motoInfo.clienteContato}`;
+      document.getElementById("detalhesStatusSelect").value = motoInfo.statusTexto === "Em andamento" ? "andamento" : "concluido";
+    };
   }
-}
-
-
 </script>
 
 
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+</div>
 </body>
 </html>
