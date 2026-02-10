@@ -218,20 +218,20 @@
 </div>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import {
-    getAuth,
-    signInWithEmailAndPassword,
-    signOut,
-    onAuthStateChanged
+  import { 
+    getAuth, 
+    signInWithEmailAndPassword, 
+    signOut, 
+    onAuthStateChanged 
   } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-  import {
-    getFirestore,
-    collection,
-    doc,
-    setDoc,
-    getDocs,
-    deleteDoc
+  import { 
+    getFirestore, 
+    collection, 
+    doc, 
+    setDoc, 
+    getDocs, 
+    deleteDoc, 
+    updateDoc 
   } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -247,313 +247,376 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  // 🔓 expõe pro resto do código
-  window.auth = auth;
-  window.db = db;
-  window.signInWithEmailAndPassword = signInWithEmailAndPassword;
-  window.signOut = signOut;
-  window.onAuthStateChanged = onAuthStateChanged;
-  window.collection = collection;
-  window.doc = doc;
-  window.setDoc = setDoc;
-  window.getDocs = getDocs;
-  window.deleteDoc = deleteDoc;
-</script>
+  // Elementos principais
+  const loginScreen = document.getElementById("loginScreen");
+  const appScreen = document.getElementById("app");
+  const erroLogin = document.getElementById("loginErro");
+  const loginEmail = document.getElementById("loginEmail");
+  const loginSenha = document.getElementById("loginSenha");
+  const btnLogin = document.getElementById("btnLogin");
+  const cardsContainer = document.getElementById("cardsContainer");
 
-<script>
+  // Global
+  let motoSelecionada = null;
+  let motosData = {};
   let indiceNotaEditando = null;
 
-/* =========================
-   ELEMENTOS PRINCIPAIS
-========================= */
-const loginScreen = document.getElementById("loginScreen");
-const appScreen = document.getElementById("app");
-const erroLogin = document.getElementById("loginErro");
-const cardsContainer = document.getElementById("cardsContainer");
+  /* =========================
+     LOGIN FIREBASE
+  ========================== */
+  btnLogin.onclick = async () => {
+    const email = loginEmail.value.trim();
+    const senha = loginSenha.value.trim();
 
-/* =========================
-   LOGIN SIMPLES
-========================= */
-document.getElementById("btnLogin").onclick = () => {
-  const email = loginEmail.value.trim();
-  const senha = loginSenha.value.trim();
+    if (!email || !senha) {
+      erroLogin.textContent = "Preencha email e senha!";
+      erroLogin.classList.remove("d-none");
+      return;
+    }
 
-  if (!email || !senha) {
-    erroLogin.textContent = "Preencha email e senha!";
-    erroLogin.classList.remove("d-none");
-    return;
-  }
-
-  loginScreen.classList.add("d-none");
-  appScreen.classList.remove("d-none");
-};
-
-/* =========================
-   VARIÁVEL GLOBAL
-========================= */
-let motoSelecionada = null;
-
-/* =========================
-   MODAL NOVO SERVIÇO
-========================= */
-const novoServicoModal = document.getElementById("novoServicoModal");
-const salvarServicoBtn = document.getElementById("salvarServico");
-
-salvarServicoBtn.onclick = () => {
-  if (!motoNome.value || !placa.value || !clienteNome.value) {
-    alert("Preencha os campos obrigatórios!");
-    return;
-  }
-
-  const statusValor = status.value;
-  const statusTexto = statusValor === "andamento"
-    ? "Em andamento"
-    : "Serviço concluído";
-
-  const statusCor = statusValor === "andamento"
-    ? "text-danger"
-    : "text-success";
-
-  const col = document.createElement("div");
-  col.className = "col";
-  col.innerHTML = `
-    <div class="card">
-      <img src="${imagem.value || "./img/default.jpg"}" class="card-img-top">
-      <div class="card-body">
-        <h5>${motoNome.value}</h5>
-        <p><strong>Placa:</strong> ${placa.value}</p>
-        <p class="fw-bold ${statusCor}">${statusTexto}</p>
-        <button class="btn btn-outline-warning btn-detalhes">Detalhes</button>
-        <button class="btn btn-outline-secondary btn-galeria">Galeria</button>
-      </div>
-    </div>
-  `;
-
-  const motoInfo = {
-    nome: motoNome.value,
-    placa: placa.value,
-    clienteNome: clienteNome.value,
-    clienteContato: clienteContato.value,
-    status: statusValor,
-    statusTexto,
-    statusCor,
-    historico: [],
-    galeria: [],
-    oleo: null,
-    card: col
+    try {
+      await signInWithEmailAndPassword(auth, email, senha);
+      erroLogin.classList.add("d-none");
+    } catch (err) {
+      erroLogin.textContent = "Email ou senha incorretos!";
+      erroLogin.classList.remove("d-none");
+    }
   };
 
-  col.motoInfo = motoInfo;
-  adicionarEventos(col, motoInfo);
-  cardsContainer.appendChild(col);
-  ordenarMotos();
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      loginScreen.classList.add("d-none");
+      appScreen.classList.remove("d-none");
+      carregarMotosFirestore();
+    } else {
+      loginScreen.classList.remove("d-none");
+      appScreen.classList.add("d-none");
+    }
+  });
 
-  bootstrap.Modal.getInstance(novoServicoModal).hide();
-};
-
-/* =========================
-   LIMPAR MODAL
-========================= */
-novoServicoModal.addEventListener("show.bs.modal", () => {
-  motoNome.value = "";
-  placa.value = "";
-  clienteNome.value = "";
-  clienteContato.value = "";
-  imagem.value = "";
-  status.value = "andamento";
-});
-
-/* =========================
-   EVENTOS DOS CARDS
-========================= */
-function adicionarEventos(col, motoInfo) {
-  col.querySelector(".btn-detalhes").onclick = () => abrirDetalhes(motoInfo);
-  col.querySelector(".btn-galeria").onclick = () => {
-    motoSelecionada = motoInfo;
-    galeriaContainer.innerHTML = "";
-    motoInfo.galeria.forEach(img => adicionarImagemGaleria(img));
-    new bootstrap.Modal(galeriaModal).show();
-  };
-}
-
-/* =========================
-   MODAL DETALHES
-========================= */
-function abrirDetalhes(motoInfo) {
-  motoSelecionada = motoInfo;
-
-  detalhesTitulo.textContent = motoInfo.nome;
-  detalhesPlaca.textContent = "Placa: " + motoInfo.placa;
-  detalhesCliente.textContent = "Cliente: " + motoInfo.clienteNome;
-  detalhesContato.textContent = "Contato: " + motoInfo.clienteContato;
-  detalhesStatusSelect.value = motoInfo.status;
-
-  renderizarHistorico();
-  new bootstrap.Modal(detalhesModal).show();
-}
-
-/* =========================
-   STATUS + ORDENAÇÃO
-========================= */
-detalhesStatusSelect.onchange = () => {
-  if (!motoSelecionada) return;
-
-  motoSelecionada.status = detalhesStatusSelect.value;
-
-  if (motoSelecionada.status === "andamento") {
-    motoSelecionada.statusTexto = "Em andamento";
-    motoSelecionada.statusCor = "text-danger";
-  } else {
-    motoSelecionada.statusTexto = "Serviço concluído";
-    motoSelecionada.statusCor = "text-success";
+  /* =========================
+     FUNÇÕES FIRESTORE
+  ========================== */
+  async function salvarMotoFirestore(moto) {
+    await setDoc(doc(db, "motos", moto.placa), moto);
   }
 
-  const statusP = motoSelecionada.card.querySelector("p.fw-bold");
-  statusP.textContent = motoSelecionada.statusTexto;
-  statusP.className = `fw-bold ${motoSelecionada.statusCor}`;
-
-  ordenarMotos();
-};
-
-function ordenarMotos() {
-  [...cardsContainer.children]
-    .sort((a, b) =>
-      (a.motoInfo.status === "andamento" ? 0 : 1) -
-      (b.motoInfo.status === "andamento" ? 0 : 1)
-    )
-    .forEach(card => cardsContainer.appendChild(card));
-}
-
-/* =========================
-   HISTÓRICO
-========================= */
-adicionarNota.onclick = () => {
-  if (!motoSelecionada) return;
-
-  const titulo = tituloNota.value.trim();
-  const texto = textoNota.value.trim();
-  if (!titulo || !texto) return;
-
-  const dataHora = new Date().toLocaleString("pt-BR");
-
-  // ✏️ EDITANDO
-  if (indiceNotaEditando !== null) {
-    motoSelecionada.historico[indiceNotaEditando] = {
-      titulo,
-      texto,
-      dataHora
-    };
-
-    indiceNotaEditando = null;
-    adicionarNota.textContent = "Adicionar anotação";
+  async function atualizarMotoFirestore(placa, dados) {
+    await updateDoc(doc(db, "motos", placa), dados);
   }
-  // ➕ NOVA NOTA
-  else {
-    motoSelecionada.historico.push({
-      titulo,
-      texto,
-      dataHora
+
+  async function excluirMotoFirestore(placa) {
+    await deleteDoc(doc(db, "motos", placa));
+  }
+
+  async function carregarMotosFirestore() {
+    cardsContainer.innerHTML = "";
+    motosData = {};
+    const snapshot = await getDocs(collection(db, "motos"));
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      motosData[data.placa] = data;
+
+      const col = criarCard(data);
+      data.card = col;
+      col.motoInfo = data;
+      adicionarEventos(col, data);
+      cardsContainer.appendChild(col);
     });
+
+    ordenarMotos();
+    verificarAlertasTrocaOleo();
   }
 
-  renderizarHistorico();
-  ultimaAtualizacao.textContent = "Última atualização: " + dataHora;
-
-  tituloNota.value = "";
-  textoNota.value = "";
-};
-
-
-function renderizarHistorico() {
-  historicoAccordion.innerHTML = "";
-
-  motoSelecionada.historico.forEach((item, i) => {
-    const div = document.createElement("div");
-    div.className = "accordion-item";
-
-    div.innerHTML = `
-      <h2 class="accordion-header">
-        <button class="accordion-button collapsed" type="button"
-          data-bs-toggle="collapse" data-bs-target="#nota${i}">
-          ${item.titulo}
-        </button>
-      </h2>
-      <div id="nota${i}" class="accordion-collapse collapse">
-        <div class="accordion-body" style="cursor:pointer">
-          ${item.texto}<br>
-          <small class="text-muted">${item.dataHora}</small>
-          <hr>
-          <small class="text-primary">Clique para editar</small>
+  /* =========================
+     CRIAÇÃO DE CARD
+  ========================== */
+  function criarCard(data) {
+    const col = document.createElement("div");
+    col.className = "col";
+    col.innerHTML = `
+      <div class="card">
+        <img src="${data.imagem || "./img/default.jpg"}" class="card-img-top">
+        <div class="card-body">
+          <h5>${data.nome}</h5>
+          <p><strong>Placa:</strong> ${data.placa}</p>
+          <p class="fw-bold ${data.statusCor}">${data.statusTexto}</p>
+          <button class="btn btn-outline-warning btn-detalhes">Detalhes</button>
+          <button class="btn btn-outline-secondary btn-galeria">Galeria</button>
         </div>
       </div>
     `;
+    return col;
+  }
 
-    // 👉 clique para editar
-    div.querySelector(".accordion-body").onclick = () => {
-      tituloNota.value = item.titulo;
-      textoNota.value = item.texto;
-      indiceNotaEditando = i;
-      adicionarNota.textContent = "Salvar edição";
+  /* =========================
+     MODAL NOVO SERVIÇO
+  ========================== */
+  const novoServicoModal = document.getElementById("novoServicoModal");
+  const salvarServicoBtn = document.getElementById("salvarServico");
+// Inputs do modal de novo serviço
+const motoNome = document.getElementById("motoNome");
+const placa = document.getElementById("placa");
+const clienteNome = document.getElementById("clienteNome");
+const clienteContato = document.getElementById("clienteContato");
+const status = document.getElementById("status");
+const imagem = document.getElementById("imagem");
+
+  salvarServicoBtn.onclick = async () => {
+    if (!motoNome.value || !placa.value || !clienteNome.value) {
+      alert("Preencha os campos obrigatórios!");
+      return;
+    }
+
+    const statusValor = status.value;
+    const statusTexto = statusValor === "andamento" ? "Em andamento" : "Serviço concluído";
+    const statusCor = statusValor === "andamento" ? "text-danger" : "text-success";
+
+    const motoInfo = {
+      nome: motoNome.value,
+      placa: placa.value,
+      clienteNome: clienteNome.value,
+      clienteContato: clienteContato.value,
+      status: statusValor,
+      statusTexto,
+      statusCor,
+      historico: [],
+      galeria: [],
+      oleo: null,
+      imagem: imagem.value || "./img/default.jpg"
     };
 
-    historicoAccordion.appendChild(div);
-  });
-}
+    await salvarMotoFirestore(motoInfo);
 
-/* =========================
-   EXCLUIR MOTO
-========================= */
-excluirMoto.onclick = () => {
-  if (!motoSelecionada || !confirm("Excluir esta moto?")) return;
-  motoSelecionada.card.remove();
-  motoSelecionada = null;
-  bootstrap.Modal.getInstance(detalhesModal).hide();
-};
+    const col = criarCard(motoInfo);
+    motoInfo.card = col;
+    col.motoInfo = motoInfo;
+    motosData[motoInfo.placa] = motoInfo;
 
-/* =========================
-   TROCA DE ÓLEO
-========================= */
-btnTrocaOleo.onclick = () => formTrocaOleo.classList.toggle("d-none");
-
-salvarTrocaOleo.onclick = () => {
-  if (!motoSelecionada) return;
-
-  const agora = new Date();
-  let dataProx = mesesProximaTroca.value
-    ? new Date(agora.setMonth(agora.getMonth() + Number(mesesProximaTroca.value)))
-    : null;
-
-  motoSelecionada.oleo = {
-    kmAtual: Number(kmAtual.value),
-    kmProx: Number(kmProximaTroca.value),
-    dataProx: dataProx ? dataProx.getTime() : null
+    adicionarEventos(col, motoInfo);
+    cardsContainer.appendChild(col);
+    ordenarMotos();
+    bootstrap.Modal.getInstance(novoServicoModal).hide();
   };
 
-  alertaTrocaOleo.textContent = "Troca registrada com sucesso!";
-  verificarAlertasTrocaOleo();
-};
+  novoServicoModal.addEventListener("show.bs.modal", () => {
+    motoNome.value = "";
+    placa.value = "";
+    clienteNome.value = "";
+    clienteContato.value = "";
+    imagem.value = "";
+    status.value = "andamento";
+  });
 
-/* =========================
-   ALERTAS
-========================= */
-function verificarAlertasTrocaOleo() {
+  /* =========================
+     EVENTOS DOS CARDS
+  ========================== */
+  function adicionarEventos(col, motoInfo) {
+    col.querySelector(".btn-detalhes").onclick = () => abrirDetalhes(motoInfo);
+    col.querySelector(".btn-galeria").onclick = () => {
+      motoSelecionada = motoInfo;
+      galeriaContainer.innerHTML = "";
+      motoInfo.galeria.forEach(img => adicionarImagemGaleria(img));
+      new bootstrap.Modal(galeriaModal).show();
+    };
+  }
+
+  /* =========================
+     DETALHES, STATUS, HISTÓRICO
+  ========================== */
+  function abrirDetalhes(motoInfo) {
+    motoSelecionada = motoInfo;
+    detalhesTitulo.textContent = motoInfo.nome;
+    detalhesPlaca.textContent = "Placa: " + motoInfo.placa;
+    detalhesCliente.textContent = "Cliente: " + motoInfo.clienteNome;
+    detalhesContato.textContent = "Contato: " + motoInfo.clienteContato;
+    detalhesStatusSelect.value = motoInfo.status;
+    renderizarHistorico();
+    new bootstrap.Modal(detalhesModal).show();
+  }
+
+  detalhesStatusSelect.onchange = async () => {
+    if (!motoSelecionada) return;
+    motoSelecionada.status = detalhesStatusSelect.value;
+    if (motoSelecionada.status === "andamento") {
+      motoSelecionada.statusTexto = "Em andamento";
+      motoSelecionada.statusCor = "text-danger";
+    } else {
+      motoSelecionada.statusTexto = "Serviço concluído";
+      motoSelecionada.statusCor = "text-success";
+    }
+    const statusP = motoSelecionada.card.querySelector("p.fw-bold");
+    statusP.textContent = motoSelecionada.statusTexto;
+    statusP.className = `fw-bold ${motoSelecionada.statusCor}`;
+
+    await atualizarMotoFirestore(motoSelecionada.placa, {
+      status: motoSelecionada.status,
+      statusTexto: motoSelecionada.statusTexto,
+      statusCor: motoSelecionada.statusCor
+    });
+
+    ordenarMotos();
+  };
+
+  adicionarNota.onclick = async () => {
+    if (!motoSelecionada) return;
+    const titulo = tituloNota.value.trim();
+    const texto = textoNota.value.trim();
+    if (!titulo || !texto) return;
+
+    const dataHora = new Date().toLocaleString("pt-BR");
+    if (indiceNotaEditando !== null) {
+      motoSelecionada.historico[indiceNotaEditando] = { titulo, texto, dataHora };
+      indiceNotaEditando = null;
+      adicionarNota.textContent = "Adicionar anotação";
+    } else {
+      motoSelecionada.historico.push({ titulo, texto, dataHora });
+    }
+
+    await atualizarMotoFirestore(motoSelecionada.placa, { historico: motoSelecionada.historico });
+    renderizarHistorico();
+    ultimaAtualizacao.textContent = "Última atualização: " + dataHora;
+    tituloNota.value = "";
+    textoNota.value = "";
+  };
+
+  function renderizarHistorico() {
+    historicoAccordion.innerHTML = "";
+    motoSelecionada.historico.forEach((item, i) => {
+      const div = document.createElement("div");
+      div.className = "accordion-item";
+      div.innerHTML = `
+        <h2 class="accordion-header">
+          <button class="accordion-button collapsed" type="button"
+            data-bs-toggle="collapse" data-bs-target="#nota${i}">
+            ${item.titulo}
+          </button>
+        </h2>
+        <div id="nota${i}" class="accordion-collapse collapse">
+          <div class="accordion-body" style="cursor:pointer">
+            ${item.texto}<br>
+            <small class="text-muted">${item.dataHora}</small>
+            <hr>
+            <small class="text-primary">Clique para editar</small>
+          </div>
+        </div>
+      `;
+      div.querySelector(".accordion-body small.text-primary").onclick = e => {
+        e.stopPropagation();
+        tituloNota.value = item.titulo;
+        textoNota.value = item.texto;
+        indiceNotaEditando = i;
+        adicionarNota.textContent = "Salvar edição";
+      };
+      historicoAccordion.appendChild(div);
+    });
+  }
+
+  excluirMoto.onclick = async () => {
+    if (!motoSelecionada || !confirm("Excluir esta moto?")) return;
+    await excluirMotoFirestore(motoSelecionada.placa);
+    motoSelecionada.card.remove();
+    motoSelecionada = null;
+    bootstrap.Modal.getInstance(detalhesModal).hide();
+  };
+
+  /* =========================
+     TROCA DE ÓLEO
+  ========================== */
+  btnTrocaOleo.onclick = () => formTrocaOleo.classList.toggle("d-none");
+
+  salvarTrocaOleo.onclick = async () => {
+    if (!motoSelecionada) return;
+    const agora = new Date();
+    let dataProx = mesesProximaTroca.value
+      ? new Date(agora.setMonth(agora.getMonth() + Number(mesesProximaTroca.value)))
+      : null;
+
+    motoSelecionada.oleo = {
+      kmAtual: Number(kmAtual.value),
+      kmProx: Number(kmProximaTroca.value),
+      dataProx: dataProx ? dataProx.getTime() : null
+    };
+
+    await atualizarMotoFirestore(motoSelecionada.placa, { oleo: motoSelecionada.oleo });
+    alertaTrocaOleo.textContent = "Troca registrada com sucesso!";
+    verificarAlertasTrocaOleo();
+  };
+
+  /* =========================
+     GALERIA
+  ========================== */
+  uploadFotos.onchange = async () => {
+    if (!motoSelecionada) return;
+    [...uploadFotos.files].forEach(file => {
+      const reader = new FileReader();
+      reader.onload = async e => {
+        motoSelecionada.galeria.push(e.target.result);
+        await atualizarMotoFirestore(motoSelecionada.placa, { galeria: motoSelecionada.galeria });
+        adicionarImagemGaleria(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    });
+    uploadFotos.value = "";
+  };
+
+  function adicionarImagemGaleria(img) {
+    const div = document.createElement("div");
+    div.className = "col-md-3";
+    div.innerHTML = `<img src="${img}" class="img-fluid rounded">`;
+    div.onclick = () => {
+      fotoGrande.src = img;
+      new bootstrap.Modal(fotoModal).show();
+    };
+    galeriaContainer.appendChild(div);
+  }
+
+  /* =========================
+     ORDENAÇÃO, ALERTAS E PESQUISA
+  ========================== */
+  function ordenarMotos() {
+    [...cardsContainer.children]
+      .sort((a, b) => (a.motoInfo.status === "andamento" ? 0 : 1) - (b.motoInfo.status === "andamento" ? 0 : 1))
+      .forEach(card => cardsContainer.appendChild(card));
+  }
+
+  function verificarAlertasTrocaOleo() {
   listaAlertas.innerHTML = "";
   let total = 0;
   const agora = Date.now();
 
-  document.querySelectorAll(".col").forEach(col => {
-    const m = col.motoInfo;
+  Object.values(motosData).forEach(m => {
     if (!m?.oleo) return;
 
-    if (
-      (m.oleo.kmProx && m.oleo.kmAtual >= m.oleo.kmProx) ||
-      (m.oleo.dataProx && agora >= m.oleo.dataProx)
-    ) {
+    const alertaKm = m.oleo.kmProx && m.oleo.kmAtual >= m.oleo.kmProx;
+    const alertaData = m.oleo.dataProx && agora >= m.oleo.dataProx;
+
+    if (alertaKm || alertaData) {
       total++;
+
       const li = document.createElement("li");
-      li.className = "dropdown-item text-danger";
-      li.textContent = `${m.nome} - ${m.placa}`;
-      li.onclick = () => abrirDetalhes(m);
+      li.className = "dropdown-item text-danger d-flex justify-content-between align-items-center";
+      li.innerHTML = `
+        <span>${m.nome} - ${m.placa}</span>
+        <button class="btn btn-sm btn-outline-secondary btn-excluir-alerta">&times;</button>
+      `;
+
+      // Clique no nome abre detalhes
+      li.querySelector("span").onclick = () => abrirDetalhes(m);
+
+      // Botão para excluir alerta
+      li.querySelector(".btn-excluir-alerta").onclick = async (e) => {
+        e.stopPropagation();
+        if (!confirm("Deseja remover o alerta de troca de óleo desta moto?")) return;
+
+        // Limpa os dados de óleo
+        m.oleo = null;
+        await atualizarMotoFirestore(m.placa, { oleo: null });
+
+        // Atualiza visualmente a lista de alertas
+        verificarAlertasTrocaOleo();
+      };
+
       listaAlertas.appendChild(li);
     }
   });
@@ -561,34 +624,13 @@ function verificarAlertasTrocaOleo() {
   contagemAlertas.textContent = total;
 }
 
-/* =========================
-   GALERIA
-========================= */
-uploadFotos.onchange = () => {
-  if (!motoSelecionada) return;
-
-  [...uploadFotos.files].forEach(file => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      motoSelecionada.galeria.push(e.target.result);
-      adicionarImagemGaleria(e.target.result);
-    };
-    reader.readAsDataURL(file);
+  searchInput.addEventListener("input", () => {
+    const termo = searchInput.value.toLowerCase();
+    document.querySelectorAll("#cardsContainer .col").forEach(col => {
+      const moto = col.motoInfo;
+      col.style.display = (moto.nome.toLowerCase().includes(termo) || moto.placa.toLowerCase().includes(termo)) ? "" : "none";
+    });
   });
-
-  uploadFotos.value = "";
-};
-
-function adicionarImagemGaleria(img) {
-  const div = document.createElement("div");
-  div.className = "col-md-3";
-  div.innerHTML = `<img src="${img}" class="img-fluid rounded">`;
-  div.onclick = () => {
-    fotoGrande.src = img;
-    new bootstrap.Modal(fotoModal).show();
-  };
-  galeriaContainer.appendChild(div);
-}
 </script>
 
 
