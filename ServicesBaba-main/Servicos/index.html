@@ -446,11 +446,13 @@ function resetarFormularioOleo() {
 }
 
 async function uploadParaCloudinary(file) {
+
   const formData = new FormData();
+
   formData.append("file", file);
-  formData.append("upload_preset", "mattos"); 
-  // troque pelo nome do seu preset
- formData.append("folder", motoSelecionada.placa);
+  formData.append("upload_preset", "mattos");
+  formData.append("folder", motoSelecionada.placa);
+
   const response = await fetch(
     "https://api.cloudinary.com/v1_1/diideuqw4/image/upload",
     {
@@ -460,9 +462,12 @@ async function uploadParaCloudinary(file) {
   );
 
   const data = await response.json();
-  return data.secure_url;
-}
 
+  console.log("Resposta Cloudinary:", data); // 👈 AQUI
+
+  return data.secure_url;
+
+}
   /* =========================
      CRIAÇÃO DE CARD
   ========================== */
