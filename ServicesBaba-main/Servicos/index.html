@@ -117,10 +117,46 @@
           <!-- BLOCO ESQUERDO: DADOS DA MOTO/CLIENTE -->
           <div class="col-md-5">
             <div class="card p-4 shadow-sm w-100" style="box-sizing: border-box;">
-              <h5 class="fw-bold mb-3">Informações da Moto</h5>
-              <p id="detalhesPlaca"></p>
-              <p id="detalhesCliente"></p>
-              <p id="detalhesContato"></p>
+             <h5 class="fw-bold mb-3">Informações da Moto</h5>
+
+<!-- MODO VISUALIZAÇÃO -->
+<div id="modoVisualizacao">
+
+<p id="detalhesNomeMoto"></p>
+<p id="detalhesPlaca"></p>
+<p id="detalhesCliente"></p>
+<p id="detalhesContato"></p>
+
+<button class="btn btn-outline-primary w-100 mt-2" id="btnEditarDados">
+<i class="bi bi-pencil"></i> Editar dados
+</button>
+
+</div>
+
+<!-- MODO EDIÇÃO -->
+<div id="modoEdicao" class="d-none">
+
+<input class="form-control mb-2" id="editNomeMoto">
+
+<input class="form-control mb-2" id="editPlaca">
+
+<input class="form-control mb-2" id="editCliente">
+
+<input class="form-control mb-2" id="editContato">
+
+<div class="d-flex gap-2">
+
+<button class="btn btn-success w-50" id="btnSalvarEdicao">
+Salvar
+</button>
+
+<button class="btn btn-secondary w-50" id="btnCancelarEdicao">
+Cancelar
+</button>
+
+</div>
+
+</div>
 
               <select class="form-select mt-3" id="detalhesStatusSelect">
                 <option value="andamento">Em andamento</option>
@@ -260,7 +296,19 @@
   let motoSelecionada = null;
   let motosData = {};
   let indiceNotaEditando = null;
+const modoVisualizacao = document.getElementById("modoVisualizacao");
+const modoEdicao = document.getElementById("modoEdicao");
 
+const btnEditarDados = document.getElementById("btnEditarDados");
+const btnSalvarEdicao = document.getElementById("btnSalvarEdicao");
+const btnCancelarEdicao = document.getElementById("btnCancelarEdicao");
+
+const detalhesNomeMoto = document.getElementById("detalhesNomeMoto");
+
+const editNomeMoto = document.getElementById("editNomeMoto");
+const editPlaca = document.getElementById("editPlaca");
+const editCliente = document.getElementById("editCliente");
+const editContato = document.getElementById("editContato");
   /* =========================
      LOGIN FIREBASE
   ========================== */
@@ -297,6 +345,61 @@
   /* =========================
      FUNÇÕES FIRESTORE
   ========================== */
+  btnSalvarEdicao.onclick = async () => {
+
+if (!motoSelecionada) return;
+
+const placaAntiga = motoSelecionada.placa;
+
+const novosDados = {
+
+nome: editNomeMoto.value,
+placa: editPlaca.value,
+clienteNome: editCliente.value,
+clienteContato: editContato.value
+
+};
+
+// Atualiza objeto local
+Object.assign(motoSelecionada, novosDados);
+
+// Atualiza Firestore
+await atualizarMotoFirestore(placaAntiga, novosDados);
+
+// Atualiza textos
+
+detalhesTitulo.textContent = motoSelecionada.nome;
+
+detalhesNomeMoto.textContent =
+"Moto: " + motoSelecionada.nome;
+
+detalhesPlaca.textContent =
+"Placa: " + motoSelecionada.placa;
+
+detalhesCliente.textContent =
+"Cliente: " + motoSelecionada.clienteNome;
+
+detalhesContato.textContent =
+"Contato: " + motoSelecionada.clienteContato;
+
+
+// Atualiza card
+
+const card = motoSelecionada.card;
+
+card.querySelector("h5").textContent =
+motoSelecionada.nome;
+
+card.querySelector("p").innerHTML =
+"<strong>Placa:</strong> " + motoSelecionada.placa;
+
+
+// Volta modo visualização
+
+modoVisualizacao.classList.remove("d-none");
+modoEdicao.classList.add("d-none");
+
+};
   async function salvarMotoFirestore(moto) {
     await setDoc(doc(db, "motos", moto.placa), moto);
   }
@@ -460,18 +563,57 @@ const imagem = document.getElementById("imagem");
   /* =========================
      DETALHES, STATUS, HISTÓRICO
   ========================== */
-  function abrirDetalhes(motoInfo) {
-    resetarFormularioNota();
-       resetarFormularioOleo();
-    motoSelecionada = motoInfo;
-    detalhesTitulo.textContent = motoInfo.nome;
-    detalhesPlaca.textContent = "Placa: " + motoInfo.placa;
-    detalhesCliente.textContent = "Cliente: " + motoInfo.clienteNome;
-    detalhesContato.textContent = "Contato: " + motoInfo.clienteContato;
-    detalhesStatusSelect.value = motoInfo.status;
-    renderizarHistorico();
-    new bootstrap.Modal(detalhesModal).show();
-  }
+function abrirDetalhes(motoInfo) {
+
+resetarFormularioNota();
+resetarFormularioOleo();
+
+motoSelecionada = motoInfo;
+
+// TEXTO NORMAL
+detalhesTitulo.textContent = motoInfo.nome;
+
+detalhesNomeMoto.textContent = "Moto: " + motoInfo.nome;
+detalhesPlaca.textContent = "Placa: " + motoInfo.placa;
+detalhesCliente.textContent = "Cliente: " + motoInfo.clienteNome;
+detalhesContato.textContent = "Contato: " + motoInfo.clienteContato;
+
+// INPUTS
+editNomeMoto.value = motoInfo.nome;
+editPlaca.value = motoInfo.placa;
+editCliente.value = motoInfo.clienteNome;
+editContato.value = motoInfo.clienteContato;
+
+// Sempre começa em modo visualização
+modoVisualizacao.classList.remove("d-none");
+modoEdicao.classList.add("d-none");
+
+detalhesStatusSelect.value = motoInfo.status;
+
+renderizarHistorico();
+
+new bootstrap.Modal(detalhesModal).show();
+
+}
+btnEditarDados.onclick = () => {
+
+modoVisualizacao.classList.add("d-none");
+modoEdicao.classList.remove("d-none");
+
+};
+btnCancelarEdicao.onclick = () => {
+
+modoVisualizacao.classList.remove("d-none");
+modoEdicao.classList.add("d-none");
+
+// Volta valores originais
+
+editNomeMoto.value = motoSelecionada.nome;
+editPlaca.value = motoSelecionada.placa;
+editCliente.value = motoSelecionada.clienteNome;
+editContato.value = motoSelecionada.clienteContato;
+
+};
   const detalhesModal = document.getElementById("detalhesModal");
 
 detalhesModal.addEventListener("hidden.bs.modal", () => {
@@ -700,21 +842,73 @@ uploadFotos.onchange = async () => {
   uploadFotos.value = "";
 };
 
-  function adicionarImagemGaleria(img) {
-    const div = document.createElement("div");
-    div.className = "col-md-3";
-    div.innerHTML = `<img src="${img}" class="img-fluid rounded">`;
-    div.onclick = () => {
-      fotoGrande.src = img;
-      new bootstrap.Modal(fotoModal).show();
-    };
+function adicionarImagemGaleria(img) {
+
+const div = document.createElement("div");
+div.className = "col-md-3 position-relative";
+
+div.innerHTML = `
+
+<img src="${img}" class="img-fluid rounded">
+
+<button class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 btnExcluirFoto">
+<i class="bi bi-trash"></i>
+</button>
+
+`;
 
 
+// Abrir foto grande
+div.querySelector("img").onclick = () => {
+
+fotoGrande.src = img;
+
+new bootstrap.Modal(fotoModal).show();
+
+};
 
 
-  galeriaContainer.appendChild(div);
+// EXCLUIR FOTO
+
+div.querySelector(".btnExcluirFoto").onclick = async (e)=>{
+
+e.stopPropagation();
+
+if(!confirm("Excluir esta foto?")) return;
+
+
+// Remove do array
+
+const index = motoSelecionada.galeria.indexOf(img);
+
+if(index > -1){
+
+motoSelecionada.galeria.splice(index,1);
+
 }
 
+
+// Atualiza Firestore
+
+await atualizarMotoFirestore(
+
+motoSelecionada.placa,
+
+{galeria:motoSelecionada.galeria}
+
+);
+
+
+// Remove da tela
+
+div.remove();
+
+};
+
+
+galeriaContainer.appendChild(div);
+
+}
   /* =========================
      ORDENAÇÃO, ALERTAS E PESQUISA
   ========================== */
